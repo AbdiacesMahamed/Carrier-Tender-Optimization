@@ -41,14 +41,67 @@ def show_file_upload_section():
 def load_data_files(gvt_file, rate_file, performance_file):
     """Load data from uploaded files or use defaults"""
     if gvt_file is not None and rate_file is not None:
-        # Use uploaded files
-        GVTdata = pd.read_excel(gvt_file, sheet_name='GVT data')
-        Ratedata = pd.read_excel(rate_file, sheet_name='Rate Sheet')
+        # Use uploaded files - automatically detect sheets
+        try:
+            # For GVT file, use first sheet or show options
+            excel_file = pd.ExcelFile(gvt_file)
+            gvt_sheets = excel_file.sheet_names
+            
+            if len(gvt_sheets) == 1:
+                # Single sheet - use it
+                sheet_name = gvt_sheets[0]
+                st.info(f"📊 Using sheet '{sheet_name}' from GVT file")
+                GVTdata = pd.read_excel(gvt_file, sheet_name=sheet_name)
+            else:
+                # Multiple sheets - use first one but inform user
+                sheet_name = gvt_sheets[0]
+                st.info(f"📊 Using first sheet '{sheet_name}' from GVT file (available: {gvt_sheets})")
+                GVTdata = pd.read_excel(gvt_file, sheet_name=sheet_name)
+                
+        except Exception as e:
+            st.error(f"❌ Error reading GVT file: {str(e)}")
+            st.stop()
+        
+        try:
+            # For Rate file, use first sheet or show options
+            excel_file = pd.ExcelFile(rate_file)
+            rate_sheets = excel_file.sheet_names
+            
+            if len(rate_sheets) == 1:
+                # Single sheet - use it
+                sheet_name = rate_sheets[0]
+                st.info(f"💰 Using sheet '{sheet_name}' from Rate file")
+                Ratedata = pd.read_excel(rate_file, sheet_name=sheet_name)
+            else:
+                # Multiple sheets - use first one but inform user
+                sheet_name = rate_sheets[0]
+                st.info(f"💰 Using first sheet '{sheet_name}' from Rate file (available: {rate_sheets})")
+                Ratedata = pd.read_excel(rate_file, sheet_name=sheet_name)
+                
+        except Exception as e:
+            st.error(f"❌ Error reading Rate file: {str(e)}")
+            st.stop()
         
         # Performance data is optional
         if performance_file is not None:
-            Performancedata = pd.read_excel(performance_file)
-            has_performance = True
+            try:
+                excel_file = pd.ExcelFile(performance_file)
+                perf_sheets = excel_file.sheet_names
+                
+                if len(perf_sheets) == 1:
+                    sheet_name = perf_sheets[0]
+                    st.info(f"📈 Using sheet '{sheet_name}' from Performance file")
+                    Performancedata = pd.read_excel(performance_file, sheet_name=sheet_name)
+                else:
+                    sheet_name = perf_sheets[0]
+                    st.info(f"📈 Using first sheet '{sheet_name}' from Performance file (available: {perf_sheets})")
+                    Performancedata = pd.read_excel(performance_file, sheet_name=sheet_name)
+                    
+                has_performance = True
+            except Exception as e:
+                st.warning(f"⚠️ Error reading Performance file: {str(e)}. Continuing without performance data.")
+                Performancedata = None
+                has_performance = False
         else:
             has_performance = False
         
@@ -58,24 +111,10 @@ def load_data_files(gvt_file, rate_file, performance_file):
         st.warning("⚠️ Please upload both GVT Data and Rate Data files to proceed. Performance Data is optional.")
         st.stop()
     else:
-        # Use default files
-        try:
-            GVTdata = pd.read_excel("c:\\Users\\maabdiac\\Downloads\\gvt data 8-5.xlsx")
-            Ratedata = pd.read_excel("c:\\Users\\maabdiac\\Downloads\\Linear Programming.xlsx", sheet_name='Rate Sheet')
-            
-            # Try to load performance data, but make it optional
-            try:
-                Performancedata = pd.read_excel("C:\\Users\\maabdiac\\Downloads\\carrier scorecard 8-5.xlsx")
-                has_performance = True
-            except FileNotFoundError:
-                Performancedata = None
-                has_performance = False
-                
-            return GVTdata, Ratedata, Performancedata, has_performance
-            
-        except FileNotFoundError:
-            st.error("❌ Default GVT or Rate data files not found. Please upload your Excel files above.")
-            st.stop()
+        # Show message that users need to upload files when deployed
+        st.info("👋 Welcome! Please upload your Excel files above to get started.")
+        st.info("📋 Required files: GVT Data and Rate Data. Performance Data is optional.")
+        st.stop()
 
 def process_performance_data(Performancedata, has_performance):
     """Process performance data if available - ONLY handles raw data cleaning, NO business logic calculations"""
