@@ -4,7 +4,7 @@ Linear Programming optimization module for the Carrier Tender Optimization Dashb
 import streamlit as st
 import pandas as pd
 import numpy as np
-from pulp import *
+import pulp as pulp
 from .config_styling import section_header
 
 def show_optimization_section(final_filtered_data):
